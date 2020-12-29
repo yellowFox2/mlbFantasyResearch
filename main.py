@@ -26,13 +26,17 @@ def checkForPlayerNames(playerDict,playerInput):
 
 def userSearchForYearlyPlayerStats(playersDict):
     playerInput = input('Find yearly stats of player ("quit" to exit search): ')
-    if playerInput != 'quit':
+    if playerInput.lower() != 'quit' and playerInput.lower() != 'quit()':
         names = {}
         names = checkForPlayerNames(playersDict,playerInput)
         print(f'\nPlayers found: {names}\n')
         for key in names.keys():
             getYearlyPlayerStats(key,playersDict)
-            print(json.dumps(playersDict[key],indent=4))
+            playerOutput = (json.dumps(playersDict[key],indent=4))
+            f = open(f"{(playersDict[key]['fullName']).replace(' ','')}{key}.txt",'w+')
+            f.write(playerOutput)
+            f.close()
+            print(playerOutput)
         return True
     else:
         print('\nExiting....\n')
