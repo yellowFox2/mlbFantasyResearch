@@ -1,14 +1,18 @@
-import statsapi
-import json
-import re
-import argparse
+#END-GOAL: give probable fantasy output by evaluating trends
+#NEEDS: noSQL db, gameday dataset (import mlbgame), baseballsavant dataset, define variables that correlate to trends, regression testing module (?)
 
+import argparse
+import statsapi
+import re
+import json
+
+#TO-DO: add to eventual noSQL db
 def appendYearlyPlayerStats(playersDict,playerID,season,stats):
     statsDict = {}
     statsDict[season] = stats
     playersDict[playerID][season] = statsDict[season]
 
-def getYearlyStats(playerID,playersDict):
+def getYearlyPlayerStats(playerID,playersDict):
     for years in statsapi.player_stat_data(playerID, type='yearByYear')['stats']:
         if(years.get('group') == playersDict[playerID]['type']):
             appendYearlyPlayerStats(playersDict,playerID,years.get('season'),years.get('stats'))
@@ -27,7 +31,7 @@ def userSearchForYearlyPlayerStats(playersDict):
         names = checkForPlayerNames(playersDict,playerInput)
         print(f'\nPlayers found: {names}\n')
         for key in names.keys():
-            getYearlyStats(key,playersDict)
+            getYearlyPlayerStats(key,playersDict)
             print(json.dumps(playersDict[key],indent=4))
         return True
     else:
@@ -45,6 +49,7 @@ def get_players(year):
         playersDict[people.get('id')]['type'] = 'hitting' if playersDict[people.get('id')]['pos'] != 'P' else 'pitching'
     return playersDict
 
+#TO-DO: give options for team stats, etc.
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-y', '--year')
