@@ -7,6 +7,7 @@ import argparse
 import statsapi
 import re
 import json
+import time
 
 #TO-DO: add player to noSQL db based on playerID
 class player:
@@ -28,7 +29,11 @@ class player:
             if(years.get('group') == self._playerStats[self._playerID]['type']):
                 self.appendYearlyPlayerStats(years.get('stats'),years.get('season'))
 
-    def findCurrentPlayerInfo(self):
+    # def searchForPlayer(self):
+    #     for record in self._playerInfoDict['people']:
+    #         if record['fullName'] == self.fullName:
+
+    def setPlayerInfo(self):
         for record in self._playerInfoDict['people']:
             if record['fullName'] == self.fullName:
                 self._playerID = record['id']
@@ -44,7 +49,7 @@ class player:
         self._playerInfoDict = playerInfo
         self.fullName = fullName
         self._playerStats = {}
-        self.findCurrentPlayerInfo()
+        self.setPlayerInfo()
         self.getYearlyPlayerStats()
 
     def __del__(self):
@@ -59,25 +64,34 @@ def getPlayerIDs(playersDict,userInput):
             foundPlayerNames[player['id']] = player['fullName']
     return foundPlayerNames
 
+def playersInit(IDsDict, playersList, year, playersDict, timer):
+    for count,key in enumerate(IDsDict.keys()):
+        playersList.append(player(year,playersDict,IDsDict[key]))
+        playersList[count].savePlayer2File()
+        print(json.dumps(playersList[count]._playerStats,indent=4))
+    print(f"Queried in {time.perf_counter() - timer:0.4f} seconds")
+    return True
+
+def getPlayerBase(searchYear):
+        return statsapi.get('sports_players',{'season':(searchYear)})
+
 def userMenu(playersDict, currentYear):
-    print(f'\n==Main Menu==\n\nWorking with {currentYear} player set\n')
-    userInput = input('Find yearly stats of player ("quit" to exit search): ')
-    if userInput.lower() != 'quit' and userInput.lower() != 'q':
+    print(f'\n==Main Menu==\n\nWorking with {currentYear[0]} player set\n')
+    userInput = input(f'\nFind yearly stats of player ("quit" to exit search): \n')
+    start = time.perf_counter()
+    if userInput.lower() == '-yearChange' or userInput.lower() == '--yc':
+        currentYear[0] = input(f'\nInput new player set year: \n')
+        tmp = getPlayerBase(currentYear[0])
+        return userMenu(tmp,currentYear)
+    elif userInput.lower() != 'quit' and userInput.lower() != 'q':
         IDs2names = {}
         IDs2names = getPlayerIDs(playersDict,userInput)
         print(f'\nPlayers found: {IDs2names}\n')
         players = []
-        for count,key in enumerate(IDs2names.keys()):
-            players.append(player(currentYear,playersDict,IDs2names[key]))
-            players[count].savePlayer2File()
-            print(json.dumps(players[count]._playerStats,indent=4))
-        return True
+        return playersInit(IDs2names,players,currentYear[0],playersDict, start)
     else:
         print('\nExiting....\n')
         return False 
-
-def getPlayerBase(searchYear):
-        return statsapi.get('sports_players',{'season':(searchYear)})
 
 def getArgs():
     parser = argparse.ArgumentParser()
@@ -90,8 +104,9 @@ def getArgs():
 def main():
     run = True
     args = getArgs()
-    currentYear = 2020 if args.year == None else args.year
-    playerBase = getPlayerBase(currentYear)
+    currentYear = []
+    currentYear.append(2020) if args.year == None else currentYear.append(args.year)
+    playerBase = getPlayerBase(currentYear[0])
     while run == True:
         run = userMenu(playerBase,currentYear)
 
