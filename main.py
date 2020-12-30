@@ -63,15 +63,6 @@ class player:
         class_name = self.__class__.__name__
         print(f'\nobject: {class_name}, playerID: {self._playerID}, {self.fullName}, destroyed....\n')       
 
-
-def gc(objects):
-    if type(objects) == list:
-        for object in objects:
-            print(f'\nDeleting object {id(object)}....\n')
-            del object
-    else:
-        del objects
-
 def checkForPlayerNames(playersDict,playerInput):
     foundPlayerNames = {}
     for player in playersDict['people']:
@@ -91,6 +82,7 @@ def parseArgs():
     return parser.parse_args()  
 
 def userMenu(playersDict, currentYear):
+    print(f'\n==Main Menu==\n\nWorking with {currentYear} player set\n')
     userInput = input('Find yearly stats of player ("quit" to exit search): ')
     if userInput.lower() != 'quit' and userInput.lower() != 'quit()':
         names = {}
@@ -108,13 +100,12 @@ def userMenu(playersDict, currentYear):
 
 #TO-DO: give options for team stats, etc.
 def main():
+    run = True
     args = parseArgs()
     currentYear = 2020 if args.year == None else args.year
     playerBase = getPlayerBase('playersInfo',currentYear)
-    # players = get_players(2020) if args.year is None else get_players(args.year)
-    while userMenu(playerBase,currentYear):
-        print(f'\n==Main Menu==\n\nWorking with {currentYear} player set\n')
-        
+    while run == True:
+        run = userMenu(playerBase,currentYear)
 
 if __name__ == '__main__':
     main()
