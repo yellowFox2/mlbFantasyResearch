@@ -8,48 +8,9 @@ import statsapi
 import re
 import json
 import time
+from pygments import highlight, lexers, formatters
+from player import player
 
-#TO-DO: add player to noSQL db based on playerID
-class player:
-    def savePlayer2File(self):
-        print('\nSaving output to ".\\out"....\n')
-        fileInput = json.dumps(self._playerStats,indent=4)
-        f = open(f".\\out\\{(self.fullName).replace(' ','')}{self._playerID}.txt",'w+')
-        f.write(fileInput)
-        f.close()
-
-    def appendYearlyPlayerStats(self,stats,season):
-        statsDict = {}
-        statsDict[season] = stats
-        self._playerStats[self._playerID][season] = statsDict[season]
-
-    def getYearlyPlayerStats(self):
-        for years in statsapi.player_stat_data(self._playerID, type='yearByYear')['stats']:
-            if(years.get('group') == self._playerStats[self._playerID]['type']):
-                self.appendYearlyPlayerStats(years.get('stats'),years.get('season'))
-
-    def setPlayerInfo(self):
-        for record in self._playerInfoDict['people']:
-            if record['fullName'] == self.fullName:
-                self._playerID = record['id']
-                self.fullName = record['fullName']            
-                self.mainPos = record['primaryPosition']['abbreviation']
-                self.playerType = 'hitting' if self.mainPos != 'P' else 'pitching'
-                self._playerStats[self._playerID] = {}
-                self._playerStats[self._playerID]['type'] = self.playerType 
-                break
-
-    def __init__(self,searchYear,playerInfo,fullName):
-        self._searchYear = searchYear
-        self._playerInfoDict = playerInfo
-        self.fullName = fullName
-        self._playerStats = {}
-        self.setPlayerInfo()
-        self.getYearlyPlayerStats()
-
-    def __del__(self):
-        class_name = self.__class__.__name__
-        print(f'\nobject: {class_name}, playerID: {self._playerID}, {self.fullName}, destroyed....\n')       
 
 def getPlayerIDs(playersDict,userInput):
     foundPlayerNames = {}
@@ -63,7 +24,9 @@ def playersInit(IDsDict, playersList, year, playersDict, timer):
     for count,key in enumerate(IDsDict.keys()):
         playersList.append(player(year,playersDict,IDsDict[key]))
         playersList[count].savePlayer2File()
-        print(json.dumps(playersList[count]._playerStats,indent=4))
+        formattedJson = json.dumps(playersList[count]._playerStats,indent=7)
+        colorJson = highlight(formattedJson, lexers.JsonLexer(), formatters.TerminalFormatter())
+        print(formattedJson)
     print(f"Queried in {time.perf_counter() - timer:0.4f} seconds")
     return True
 
