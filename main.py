@@ -13,7 +13,6 @@ import time
 class player:
     def savePlayer2File(self):
         print('\nSaving output to ".\\out"....\n')
-        print(json.dumps(self._playerStats,indent=4))
         fileInput = json.dumps(self._playerStats,indent=4)
         f = open(f".\\out\\{(self.fullName).replace(' ','')}{self._playerID}.txt",'w+')
         f.write(fileInput)
@@ -28,10 +27,6 @@ class player:
         for years in statsapi.player_stat_data(self._playerID, type='yearByYear')['stats']:
             if(years.get('group') == self._playerStats[self._playerID]['type']):
                 self.appendYearlyPlayerStats(years.get('stats'),years.get('season'))
-
-    # def searchForPlayer(self):
-    #     for record in self._playerInfoDict['people']:
-    #         if record['fullName'] == self.fullName:
 
     def setPlayerInfo(self):
         for record in self._playerInfoDict['people']:
