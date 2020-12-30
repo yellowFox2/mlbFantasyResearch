@@ -1,5 +1,6 @@
+#REQUIREMENTS: Python3, MLB-StatsAPI (github.com/toddrob99/MLB-StatsAPI -> run setup.py -- this requires 'import requests'),
 #END-GOAL: give probable fantasy output by evaluating trends
-#NEEDS: noSQL db, gameday dataset (import mlbgame), baseballsavant dataset, define variables that correlate to trends, regression testing module (?)
+#WANTS: apply hit value coefficients, noSQL db, gameday dataset (import mlbgame), baseballsavant dataset, define variables that correlate to trends, regression testing module (?)
 
 import argparse
 import statsapi
@@ -7,62 +8,112 @@ import re
 import json
 
 #TO-DO: add to eventual noSQL db
-def appendYearlyPlayerStats(playersDict,playerID,season,stats):
-    statsDict = {}
-    statsDict[season] = stats
-    playersDict[playerID][season] = statsDict[season]
+class player:
+    _searchYear = 2020
+    _playerInfoDict = {}
+    _playerID = None 
+    fullName = None
+    mainPos = None 
+    playerType = None
+    _playerStats = {}  
 
-def getYearlyPlayerStats(playerID,playersDict):
-    for years in statsapi.player_stat_data(playerID, type='yearByYear')['stats']:
-        if(years.get('group') == playersDict[playerID]['type']):
-            appendYearlyPlayerStats(playersDict,playerID,years.get('season'),years.get('stats'))
+    def savePlayer2File(self):
+        print('\nSaving output to local dir....\n')
+        print(json.dumps(self._playerStats,indent=4))
+        fileInput = json.dumps(self._playerStats,indent=4)
+        f = open(f"{(self.fullName).replace(' ','')}{self._playerID}.txt",'w+')
+        f.write(fileInput)
+        f.close()
 
-def checkForPlayerNames(playerDict,playerInput):
+    def appendYearlyPlayerStats(self,stats,season):
+        statsDict = {}
+        statsDict[season] = stats
+        self._playerStats[self._playerID][season] = statsDict[season]
+
+    def getYearlyPlayerStats(self):
+        for years in statsapi.player_stat_data(self._playerID, type='yearByYear')['stats']:
+            if(years.get('group') == self._playerStats[self._playerID]['type']):
+                self.appendYearlyPlayerStats(years.get('stats'),years.get('season'))
+
+    def getPlayerStats(self):
+        return statsapi.player_stat_data(self._playerID, type='yearByYear')['stats']
+
+    def findCurrentPlayerInfo(self):
+        for record in self._playerInfoDict['people']:
+            if record['fullName'] == self.fullName:
+                print('found')
+                self._playerID = record['id']
+                self.fullName = record['fullName']            
+                self.mainPos = record['primaryPosition']['abbreviation']
+                self.playerType = 'hitting' if self.mainPos != 'P' else 'pitching'
+                if self._playerStats:
+                    self._playerStats.clear()
+                self._playerStats[self._playerID] = {}
+                self._playerStats[self._playerID]['type'] = self.playerType 
+                break
+
+    def __init__(self,searchYear,playerInfo,fullName):
+        self._searchYear = searchYear
+        self._playerInfoDict = playerInfo
+        self.fullName = fullName
+        self.findCurrentPlayerInfo()
+        self.getYearlyPlayerStats()
+
+    def __del__(self):
+        class_name = self.__class__.__name__
+        print(f'\nobject: {class_name}, playerID: {self._playerID}, {self.fullName}, destroyed....\n')       
+
+
+def gc(objects):
+    if type(objects) == list:
+        for object in objects:
+            print(f'\nDeleting object {id(object)}....\n')
+            del object
+    else:
+        del objects
+
+def checkForPlayerNames(playersDict,playerInput):
     foundPlayerNames = {}
-    for player in playerDict:
-        if re.search(rf'\b(?=\w){playerInput}\b(?!\w)',playerDict[player]['fullName'],flags=re.IGNORECASE):
-            foundPlayerNames[player] = (playerDict[player]['fullName'])
+    for player in playersDict['people']:
+        if re.search(rf'\b(?=\w){playerInput}\b(?!\w)',player['fullName'],flags=re.IGNORECASE):
+            foundPlayerNames[player['id']] = {}
+            foundPlayerNames[player['id']] = player['fullName']
     return foundPlayerNames
 
-def userSearchForYearlyPlayerStats(playersDict):
-    playerInput = input('Find yearly stats of player ("quit" to exit search): ')
-    if playerInput.lower() != 'quit' and playerInput.lower() != 'quit()':
-        names = {}
-        names = checkForPlayerNames(playersDict,playerInput)
-        print(f'\nPlayers found: {names}\n')
-        for key in names.keys():
-            getYearlyPlayerStats(key,playersDict)
-            playerOutput = (json.dumps(playersDict[key],indent=4))
-            f = open(f"{(playersDict[key]['fullName']).replace(' ','')}{key}.txt",'w+')
-            f.write(playerOutput)
-            f.close()
-            print(playerOutput)
-        return True
-    else:
-        print('\nExiting....\n')
-        return False
-  
-def get_players(year):
-    print(f'\nGetting player IDs from {year}....\n')
-    playersDict = {}
-    players = statsapi.get('sports_players',{'season':year})
-    for people in players['people']:
-        playersDict[people.get('id')] = {}
-        playersDict[people.get('id')]['fullName'] = people.get('fullName')
-        playersDict[people.get('id')]['pos'] = people['primaryPosition'].get('abbreviation')
-        playersDict[people.get('id')]['type'] = 'hitting' if playersDict[people.get('id')]['pos'] != 'P' else 'pitching'
-    return playersDict
+def getPlayerBase(option,searchYear):
+        return statsapi.get('sports_players',{'season':(searchYear)})
 
-#TO-DO: give options for team stats, etc.
-def main():
+def parseArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-y', '--year')
     parser.add_argument('-p', '--playerName')
     parser.add_argument('-t', '--teamName')
-    args = parser.parse_args()
-    players = get_players(2020) if args.year is None else get_players(args.year)
-    while userSearchForYearlyPlayerStats(players):
-        print('\n==Main Menu==\n')
+    return parser.parse_args()  
+
+def userMenu(playersDict, currentYear):
+    userInput = input('Find yearly stats of player ("quit" to exit search): ')
+    if userInput.lower() != 'quit' and userInput.lower() != 'quit()':
+        names = {}
+        names = checkForPlayerNames(playersDict,userInput)
+        print(f'\nPlayers found: {names}\n')
+        players = []
+        for count,key in enumerate(names.keys()):
+            players.append(player(currentYear,playersDict,names[key]))
+            players[count].savePlayer2File()
+            print(json.dumps(players[count]._playerStats,indent=4))
+        return True
+    else:
+        print('\nExiting....\n')
+        return False        
+
+#TO-DO: give options for team stats, etc.
+def main():
+    args = parseArgs()
+    currentYear = 2020 if args.year == None else args.year
+    playerBase = getPlayerBase('playersInfo',currentYear)
+    # players = get_players(2020) if args.year is None else get_players(args.year)
+    while userMenu(playerBase,currentYear):
+        print(f'\n==Main Menu==\n\nWorking with {currentYear} player set\n')
         
 
 if __name__ == '__main__':
