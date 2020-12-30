@@ -63,10 +63,13 @@ class player:
         class_name = self.__class__.__name__
         print(f'\nobject: {class_name}, playerID: {self._playerID}, {self.fullName}, destroyed....\n')       
 
-def checkForPlayerNames(playersDict,playerInput):
+def checkForPlayerNames(playersDict,userInput):
     foundPlayerNames = {}
     for player in playersDict['people']:
-        if re.search(rf'\b(?=\w){playerInput}\b(?!\w)',player['fullName'],flags=re.IGNORECASE):
+        if re.search(rf'\b(?=\w){userInput}\b(?!\w)',player['fullName'],flags=re.IGNORECASE) and userInput != '*':
+            foundPlayerNames[player['id']] = {}
+            foundPlayerNames[player['id']] = player['fullName']
+        elif userInput == '*':
             foundPlayerNames[player['id']] = {}
             foundPlayerNames[player['id']] = player['fullName']
     return foundPlayerNames
