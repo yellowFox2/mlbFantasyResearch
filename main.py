@@ -23,7 +23,7 @@ def playersInit(IDsDict, playersList, year, playersDict, timer,dbRef):
         if playerBuffer == 10:
             playersList.clear()
             playerBuffer = 0
-        playersList.append(player(year,playersDict,IDsDict[key],dbRef))
+        playersList.append(player(playersDict,IDsDict[key],dbRef))
         playersList[playerBuffer].savePlayer2File()
         playerBuffer += 1
     print(f"Queried in {time.perf_counter() - timer:0.4f} seconds")
