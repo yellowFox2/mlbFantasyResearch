@@ -22,7 +22,6 @@ class player:
 			time.sleep(5)
 		#OLD --> f = open(f".\\out\\{(self.fullName).replace(' ','')}{self._playerID}.txt",'w+')
 
-
 	def appendYearlyPlayerStats(self,stats,season):
 		statsDict = {}
 		statsDict[season] = stats

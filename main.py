@@ -12,14 +12,7 @@ from pymongo import MongoClient
 def getPlayerIDs(playersDict,userInput):
     foundPlayerNames = {}
     for player in playersDict['people']:
-        if userInput == '--selectIndex':
-            searchCriteria = input('Choose indexing option: ')
-            if re.search(r'<[a-zA-Z]{1}[*]$',searchCriteria,flags=re.IGNORECASE):
-                if searchCriteria[0:1:] == (player['fullName'])[0:1:]:
-                    foundPlayerNames[player['id']] = {}
-                    foundPlayerNames[player['id']] = player['fullName']
-
-        elif re.search(rf'\b(?=\w){userInput}\b(?!\w)',player['fullName'],flags=re.IGNORECASE) or userInput == '*':
+        if re.search(rf'\b(?=\w){userInput}\b(?!\w)',player['fullName'],flags=re.IGNORECASE) or userInput == '*':
             foundPlayerNames[player['id']] = {}
             foundPlayerNames[player['id']] = player['fullName']
 
@@ -37,6 +30,7 @@ def playersInit(IDsDict, playersList, year, playersDict, timer,dbRef):
     print(f"Queried in {time.perf_counter() - timer:0.4f} seconds")
     return True
 
+#!!FIX
 #Alternate to getLocalPlayerBase
 #For use without local json
 #def getPlayerBase(searchYear):
@@ -50,6 +44,7 @@ def userMenu(playersDict, currentYear,dbRef):
     print(f'\n==Main Menu==\n\nWorking with {currentYear[0]} player set\n')
     userInput = input(f'\nFind yearly stats of player ("quit" to exit search): \n')
     start = time.perf_counter()
+    #!!FIX
     #if userInput.lower() == '-yearChange' or userInput.lower() == '--yc':
         #currentYear[0] = input(f'\nInput new player set year: \n')
         #tmp = getPlayerBase(currentYear[0])
@@ -57,7 +52,7 @@ def userMenu(playersDict, currentYear,dbRef):
     if userInput.lower() != 'quit' and userInput.lower() != 'q':
         IDs2names = {}
         IDs2names = getPlayerIDs(playersDict,userInput)
-        #print(f'\nPlayers found: {IDs2names}\n')
+        print(f'\nPlayers found: {IDs2names}\n')
         players = []
         return playersInit(IDs2names,players,currentYear[0],playersDict,start,dbRef)
     else:
@@ -78,6 +73,7 @@ def main():
     dbRef = MongoClient('mongodb://localhost:27017')
     currentYear = []
     currentYear.append(2020) if args.year == None else currentYear.append(args.year)
+    #!!FIX
     #playerBase = getPlayerBase(currentYear[0])
     playerBase = getLocalPlayerBase()
     while run == True:
