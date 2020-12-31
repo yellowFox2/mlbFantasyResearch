@@ -15,7 +15,6 @@ def getPlayerIDs(playersDict,userInput):
         if re.search(rf'\b(?=\w){userInput}\b(?!\w)',player['fullName'],flags=re.IGNORECASE) or userInput == '*':
             foundPlayerNames[player['id']] = {}
             foundPlayerNames[player['id']] = player['fullName']
-
     return foundPlayerNames
 
 def playersInit(IDsDict, playersList, year, playersDict, timer,dbRef):
