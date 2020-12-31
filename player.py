@@ -22,15 +22,14 @@ class player:
 			time.sleep(5)
 		#OLD --> f = open(f".\\out\\{(self.fullName).replace(' ','')}{self._playerID}.txt",'w+')
 
-	def appendYearlyPlayerStats(self,stats,season):
-		statsDict = {}
-		statsDict[season] = stats
-		self._playerStats[str(self._playerID)][season] = statsDict[season]
-
 	def getYearlyPlayerStats(self):
 		for years in statsapi.player_stat_data(self._playerID, type='yearByYear')['stats']:
 			if(years.get('group') == self._playerStats[str(self._playerID)]['type']):
 				self.appendYearlyPlayerStats(years.get('stats'),years.get('season'))
+				statsDict = {}
+				statsDict[years.get('season')] = years.get('stats')
+				self._playerStats[str(self._playerID)][years.get('season')] = statsDict[years.get('season')]
+				
 
 	def setPlayerInfo(self):
 		for record in self._playerBase['people']:
@@ -45,9 +44,8 @@ class player:
 				self._playerStats[str(self._playerID)]['type'] = self.playerType 
 				break
 
-	def __init__(self,searchYear,playerBase,fullName,dbRef):
+	def __init__(self,playerBase,fullName,dbRef):
 		self._connection = dbRef
-		self._searchYear = searchYear
 		self._playerBase = playerBase
 		self.fullName = fullName
 		self._playerStats = {}
