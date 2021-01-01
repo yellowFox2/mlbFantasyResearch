@@ -69,7 +69,13 @@ def getArgs():
 def main():
     run = True
     args = getArgs()
-    dbRef = MongoClient('mongodb://localhost:27017')
+    connectionString = 'mongodb://localhost:27017'
+    try:
+        dbRef = MongoClient(connectionString)
+        print(f'\nConnected to {connectionString}\n')
+    except:
+        print(f'\nError: did not connect to db via: {connectString}\nExiting....\n')
+        quit()
     currentYear = []
     currentYear.append(2020) if args.year == None else currentYear.append(args.year)
     #!!FIX
