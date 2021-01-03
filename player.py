@@ -5,27 +5,25 @@ import statsapi
 import re
 import json
 import time
-from pymongo import MongoClient
+import traceback
+#from pymongo import MongoClient
 
-#TO-DO: add/change/delete player in noSQL
+#TO-DO: change/delete player in noSQL
 class player:
 
-	def savePlayer2File(self):
-		db = self._connection['players']
-		collections = db.list_collection_names()
+	def savePlayer2db(self,dbRef):
+#		db = self._connection['players']
+		collections = dbRef['players'].list_collection_names()
 		if str(self._playerID) in collections:
 			print(f'\nMongodDB record found for {self._playerID}, {self.fullName}')
-			playerDbCollection = db[str(self._playerID)]
+			playerDbCollection = dbRef[str(self._playerID)]
 		else:
 			print(f'Adding {self.fullName} to players db....')
-			result = db[str(self._playerID)].insert_one(self._playerStats)
-			time.sleep(5)
-		#OLD --> f = open(f".\\out\\{(self.fullName).replace(' ','')}{self._playerID}.txt",'w+')
+			result = dbRef['players'][str(self._playerID)].insert_one(self._playerStats)
 
 	def getYearlyPlayerStats(self):
 		for years in statsapi.player_stat_data(self._playerID, type='yearByYear')['stats']:
 			if(years.get('group') == self._playerStats[str(self._playerID)]['type']):
-				self.appendYearlyPlayerStats(years.get('stats'),years.get('season'))
 				statsDict = {}
 				statsDict[years.get('season')] = years.get('stats')
 				self._playerStats[str(self._playerID)][years.get('season')] = statsDict[years.get('season')]
@@ -44,16 +42,16 @@ class player:
 				self._playerStats[str(self._playerID)]['type'] = self.playerType 
 				break
 
-	def __init__(self,playerBase,fullName,dbRef):
-		self._connection = dbRef
+	def __init__(self,playerBase,fullName):
 		self._playerBase = playerBase
 		self.fullName = fullName
 		self._playerStats = {}
 		self.setPlayerInfo()
 		try:
 			self.getYearlyPlayerStats()
-		except:
+		except Exception:
 			print(f"ERROR: couldn't find player stats for {self.fullName}")
+			print(traceback.format_exc())
 
 	def __del__(self):
 		class_name = self.__class__.__name__

@@ -8,6 +8,9 @@ import time
 from player import player
 from pymongo import MongoClient
 
+def getPlayerBaseByYear(searchYear):
+    print(f'\nPulling {searchYear} general player info from MLB-statsAPI....\n')
+    return statsapi.get('sports_players',{'season':(searchYear)})
 
 def getPlayerIDs(playersDict,userInput):
     foundPlayerNames = {}
@@ -23,40 +26,34 @@ def playersInit(IDsDict, playersList, year, playersDict, timer,dbRef):
         if playerBuffer == 10:
             playersList.clear()
             playerBuffer = 0
-        playersList.append(player(playersDict,IDsDict[key],dbRef))
-        playersList[playerBuffer].savePlayer2File()
+        playersList.append(player(playersDict,IDsDict[key]))
+        playersList[playerBuffer].savePlayer2db(dbRef)
         playerBuffer += 1
     print(f"Queried in {time.perf_counter() - timer:0.4f} seconds")
     return True
 
-#!!FIX
-#Alternate to getLocalPlayerBase
-#For use without local json
-#def getPlayerBase(searchYear):
-#       return statsapi.get('sports_players',{'season':(searchYear)})
-
 def getLocalPlayerBase():
     return json.load(open('.\\src\\playersGenInfo.json',))
 
-
 def userMenu(playersDict, currentYear,dbRef):
     print(f'\n==Main Menu==\n\nWorking with {currentYear[0]} player set\n')
-    userInput = input(f'\nFind yearly stats of player ("quit" to exit search): \n')
+    userInput = input(f'\nFind yearly stats of player ("quit" to exit search, "yrchng" to change player base): \n')
     start = time.perf_counter()
-    #!!FIX
-    #if userInput.lower() == '-yearChange' or userInput.lower() == '--yc':
-        #currentYear[0] = input(f'\nInput new player set year: \n')
-        #tmp = getPlayerBase(currentYear[0])
-        #return userMenu(tmp,currentYear)
-    if userInput.lower() != 'quit' and userInput.lower() != 'q':
+    if userInput.lower() == 'yrchange' or userInput.lower() == 'yrchng':
+        currentYear[0] = input(f'\nWhich year?\n')
+        playersDict = getPlayerBaseByYear(currentYear[0])
+        return userMenu(playersDict,currentYear,dbRef)
+    elif userInput.lower() == 'quit' or userInput.lower() == 'q':
+        print('\nExiting....\n')
+        return False         
+    # if userInput.lower() == '-paavgs':
+    #     pass
+    else:
         IDs2names = {}
         IDs2names = getPlayerIDs(playersDict,userInput)
         print(f'\nPlayers found: {IDs2names}\n')
         players = []
         return playersInit(IDs2names,players,currentYear[0],playersDict,start,dbRef)
-    else:
-        print('\nExiting....\n')
-        return False 
 
 def getArgs():
     parser = argparse.ArgumentParser()
@@ -78,8 +75,6 @@ def main():
         quit()
     currentYear = []
     currentYear.append(2020) if args.year == None else currentYear.append(args.year)
-    #!!FIX
-    #playerBase = getPlayerBase(currentYear[0])
     playerBase = getLocalPlayerBase()
     while run == True:
         run = userMenu(playerBase,currentYear,dbRef)
