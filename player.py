@@ -1,17 +1,17 @@
-#WANTS: Apply/test "hit value" coefficients, noSQL db, gameday dataset (import mlbgame), baseballsavant dataset, define variables that correlate to trends, regression testing module (?)
+#WANTS: Apply/test "event run value" coefficients, noSQL db, gameday dataset (import mlbgame), baseballsavant dataset, define variables that correlate to trends, regression testing module (?)
 
 import argparse
 import statsapi
 import re
 import json
+#import json2html
 import time
 import traceback
-#from pymongo import MongoClient
 
-#TO-DO: change/delete player in noSQL
+#TO-DO: change/delete player in db
 class player:
 
-	# def careerStats(self):
+	#def careerStats(self):
 	# 	gamesPlayed
 	# 	groundOuts
 	# 	airOuts
@@ -44,9 +44,9 @@ class player:
 	# 	groundOutsToAirouts
 	# 	atBatsPerHomeRun
 
-	# def getFullSeasonRate(self,stat,games):
+	# def getFullSeasonStateRate(self,stat,games):
 	# 	return (stat/games) * 162
-	# def getYearlyPlayerRunVal(self,dbRef):
+	# def getYearlyRunVal(self):
 		#Per Tom Tango's The Book, run environment from 1999 - 2002:
 		#HR=1.397
 		#3B=1.07
@@ -60,9 +60,9 @@ class player:
 		#SB=.175
 		#CS=-.467
 
-
-
-
+	# def getYearlyFantasyPoints(self,leagueEnv):
+	# 	pass
+				
 	def savePlayer2db(self,dbRef):
 #		db = self._connection['players']
 		collections = dbRef['players'].list_collection_names()
@@ -79,7 +79,6 @@ class player:
 				statsDict[years.get('season')] = years.get('stats')
 				self._playerStats[str(self._playerID)][years.get('season')] = statsDict[years.get('season')]
 				
-
 	def setPlayerInfo(self):
 		for record in self._playerBase['people']:
 			if record['fullName'] == self.fullName:
@@ -93,11 +92,10 @@ class player:
 				self._playerStats[str(self._playerID)]['type'] = self.playerType 
 				break
 
-
-
-	def printYearlyPlayerStats(self,dbRef,yearRange):
+	def printYearlyPlayerStats(self,dbRef):
+		self.getYearsActive(dbRef)
 		curPlayerColl = dbRef.players[str(self._playerID)]
-		for year in yearRange:
+		for year in self.yearsActiveList:
 			print('------------------------------------------------')
 			print('year: ', year)
 			data = curPlayerColl.find_one({},{'_id':0,f'{str(self._playerID)}.{year}':1})
@@ -105,22 +103,21 @@ class player:
 				for nestedKey, nestedVal in value.items():
 					print(nestedKey, ': ', nestedVal)
 
-	#!!Fix
 	def getYearsActive(self,dbRef):
-		curPlayerColl = dbRef.players[str(self._playerID)]	
-		yearRange = []	
+		curPlayerColl = dbRef.players[str(self._playerID)]
+		data = curPlayerColl.find_one({},{'_id':0,f'{str(self._playerID)}':1})
 		yearRegex = re.compile('^[1|2]{1}[0-9]{3}$')
-		print(yearRegex)
-		test = curPlayerColl.find({},{'_id':0,f'{str(self._playerID)}.{yearRegex}':1})
-		for cursor in test:
-			for key, value in cursor.items():
-				print(key)
-				print(value)
-			#print(cursor.items())
-		# for key, value in test.items():
-		# 	print(f'{key} : {value}\n')
-			#yearRange.append(year)					
-
+		self.yearsActiveList = []
+		self.yearsActiveCount = 0
+		for value in data.values():
+			for nestedKey, nestedVal in value.items():
+				result = re.match(yearRegex,nestedKey)
+				if result:
+					self.yearsActiveList.append(nestedKey)
+					self.yearsActiveCount += 1
+		print(f'\nYears active: {self.yearsActiveCount}\nRange: {self.yearsActiveList}\n')
+				#print(nestedKey, ': ', nestedVal)
+			
 	def __init__(self,playerBase,fullName):
 		self._playerBase = playerBase
 		self.fullName = fullName
